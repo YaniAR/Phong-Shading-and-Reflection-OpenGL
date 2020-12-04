@@ -1,5 +1,12 @@
 # Phong-Shading-and-Reflection-OpenGL
 
+## Phong + Refraction (Fresnel Effect)
+
+![alt text](https://media4.giphy.com/media/abyVJZK7jdxSufzMBV/giphy.gif)
+
+## Refraction
+![alt text](https://media1.giphy.com/media/iLPLVw97z73sEV55fk/giphy.gif)
+
 ![alt text](https://i.imgur.com/tUxAbUE.png)
 
 ![alt text](https://i.imgur.com/m58Fqz7.png)
