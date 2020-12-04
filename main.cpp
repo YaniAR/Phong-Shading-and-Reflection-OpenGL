@@ -22,8 +22,8 @@
 
 // Constants
 constexpr unsigned int WIDTH{ 800 }, HEIGHT{ 600 };
-float lastX{ WIDTH / 2.0 };
-float lastY{ HEIGHT / 2.0 };
+float lastX = WIDTH / 2.0;
+float lastY = HEIGHT / 2.0;
 
 constexpr float M_PI{ glm::pi<GLfloat>() };
 constexpr int STACKS{ 50 };
@@ -55,7 +55,7 @@ void getSphereCoords()
         }
     }
 
-    for (int i{ 0 }; i < numberOfPoints / 3 - STACKS; i++)
+    for (int i = 0; i < numberOfPoints / 3 - STACKS; i++)
     {
         if ((i + 1) % STACKS == 0)
         {
@@ -166,6 +166,12 @@ int main()
 
     getSphereCoords();
 
+
+    glm::vec3 spherePositions[] = {
+    glm::vec3(0.0f, 0.0f, 0.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    };
+
     GLfloat skyboxVertices[] = {
         // Positions
         -1.0f,  1.0f, -1.0f,
@@ -211,7 +217,7 @@ int main()
         1.0f, -1.0f,  1.0f
     };
 
-    std::vector<const GLchar*> faces{};
+    std::vector<const GLchar*> faces;
     faces.push_back("Yokohama3/posx.jpg");
     faces.push_back("Yokohama3/negx.jpg");
     faces.push_back("Yokohama3/posy.jpg");
@@ -221,7 +227,7 @@ int main()
 
     // Sphere
 
-    GLuint VBO{}, sphereVAO{}, EBO{};
+    GLuint VBO, sphereVAO, EBO;
     glGenVertexArrays(1, &sphereVAO);
     glBindVertexArray(sphereVAO);
 
@@ -233,7 +239,6 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, numberOfIndexes * sizeof(GLuint), indices, GL_STATIC_DRAW);
 
-    // Position attribute
     GLint posAttrib{ glGetAttribLocation(lightingShader.Program, "position") };
     glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(posAttrib);
@@ -258,10 +263,9 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
     glBindVertexArray(0);
 
-    // Loades Cube Map textures
-    GLuint cubemapTexture{ LoadCubemap(faces) };
+    GLuint cubemapTexture = LoadCubemap(faces);
 
-    glm::mat4 projection{ glm::perspective(camera.GetZoom(), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f) };
+    glm::mat4 projection = glm::perspective(camera.GetZoom(), (float)WIDTH / (float)HEIGHT, 0.1f, 1000.0f);
             
     bool running{ true };
     float currentFrame{};
@@ -295,14 +299,13 @@ int main()
                 case sf::Keyboard::A:           camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime); break;
                 default:    break;
                 }
-            case sf::Event::MouseMoved:         MouseCallBack(camera, sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
-                break;
+            case sf::Event::MouseMoved: MouseCallBack(camera, sf::Mouse::getPosition().x, sf::Mouse::getPosition().y);
+                                                break;
             default:                            break;
             }
         }
-
-        glm::mat4 model{};
-        glm::mat4 view{};
+        glm::mat4 model;
+        glm::mat4 view;
         glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -323,58 +326,46 @@ int main()
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
         glUniform3fv(cameraPosLoc, 1, glm::value_ptr(camera.GetPosition()));
 
-        // Draw the sphere
-        glBindVertexArray(sphereVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawElements(GL_TRIANGLES, numberOfIndexes, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
         
-        /* Phong
-        GLint lightPosLoc = glGetUniformLocation(lightingShader.Program, "light.position");
 
-        glm::vec3 lightColor;
+        GLint lightPosLoc = glGetUniformLocation(lightingShader.Program, "light.position");
+        glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+
+        glm::vec3 lightColor{};
         lightColor.r = sin(clock.getElapsedTime().asSeconds() * 2.0f);
         lightColor.g = sin(clock.getElapsedTime().asSeconds() * 0.7f);
         lightColor.b = sin(clock.getElapsedTime().asSeconds() * 1.3f);
 
-        glm::vec3 diffuseColor = lightColor * glm::vec3(0.7f); // Decrease the influence
-        glm::vec3 ambientColor = diffuseColor * glm::vec3(0.2f); // Low influence
+        glm::vec3 diffuseColor{ lightColor * glm::vec3(0.7f) }; // Decrease the influence
+        glm::vec3 ambientColor{ diffuseColor * glm::vec3(0.2f) }; // Low influence
+
+        // Set light properties
         glUniform3f(glGetUniformLocation(lightingShader.Program, "light.ambient"), ambientColor.r, ambientColor.g, ambientColor.b);
         glUniform3f(glGetUniformLocation(lightingShader.Program, "light.diffuse"), diffuseColor.r, diffuseColor.g, diffuseColor.b);
-        glUniform3f(glGetUniformLocation(lightingShader.Program, "light.specular"), 1.0f, 1.0f, 1.0f);
 
+        // Light specular
+        glUniform1f(glGetUniformLocation(lightingShader.Program, "light.specular"), 0.75f);
+        
         // Set material properties
         glUniform3f(glGetUniformLocation(lightingShader.Program, "material.ambient"), 1.0f, 0.5f, 0.31f);
         glUniform3f(glGetUniformLocation(lightingShader.Program, "material.diffuse"), 1.0f, 0.5f, 0.31f);
         glUniform3f(glGetUniformLocation(lightingShader.Program, "material.specular"), 0.5f, 0.5f, 0.5f); // Specular doesn't have full effect on this object's material
         glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 32.0f);
 
-        GLint viewPosLoc = glGetUniformLocation(lightingShader.Program, "viewPos");
-        glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
-        glUniform3f(viewPosLoc, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-
-        // Create camera transformations
-        view = camera.GetViewMatrix();
-
-        // Get the uniform locations
-        GLint modelLoc = glGetUniformLocation(lightingShader.Program, "model");
-        GLint viewLoc = glGetUniformLocation(lightingShader.Program, "view");
-        GLint projLoc = glGetUniformLocation(lightingShader.Program, "projection");
-
-        // Pass the matrices to the shader
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-        // Draw the container (using container's vertex attributes)
+        // Draw the sphere
         glBindVertexArray(sphereVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, numberOfPoints * sizeof(GLfloat), vertice, GL_STATIC_DRAW);
-        model = glm::mat4();
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glDrawElements(GL_TRIANGLES, numberOfIndexes, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0
-        */
+        for (GLuint i{ 0 }; i < 2; ++i)
+        {
+            model = glm::mat4();
+            model = glm::translate(model, spherePositions[i]);
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+            glDrawElements(GL_TRIANGLES, numberOfIndexes, GL_UNSIGNED_INT, 0);
+        }
+       
+        //glDrawElements(GL_TRIANGLES, numberOfIndexes, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
 
         glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.Use();
@@ -388,8 +379,6 @@ int main()
         glBindVertexArray(skyboxVAO);
         glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-
-        // Draw the cubemap
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
@@ -397,7 +386,7 @@ int main()
 
         window.display();
     }
-
+    
     glDeleteBuffers(1, &skyboxVBO);
     glDeleteBuffers(1, &VBO);
     glDeleteVertexArrays(1, &skyboxVAO);
