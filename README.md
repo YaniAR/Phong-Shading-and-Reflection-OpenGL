@@ -7,3 +7,7 @@
 ## Phong
 
 ![alt text](https://media1.giphy.com/media/NH7gDENQ6NQUuECWqy/giphy.gif)
+
+### Libraries Used
+
+SFML, GLEW, GLM, SOIL2
